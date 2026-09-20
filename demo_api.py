@@ -191,7 +191,7 @@ async def upload_document(file: UploadFile = File(...)):
     sp = TextSplitter()
     chunks = sp.split([doc])
     if rag_chain:
-        rag_chain.vectorstore.add_documents(chunks)
+        rag_chain.vectorstore_manager.add_documents(chunks)
         return {"message": f"文件 '{file.filename}' 已上传并加入知识库", "chunks": len(chunks)}
     else:
         return {"message": f"文件已保存到 docs 目录，但RAG未初始化，重启后生效", "chunks": len(chunks)}
