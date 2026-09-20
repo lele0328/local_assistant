@@ -155,6 +155,14 @@ def get_weather(city: str):
     return WeatherResponse(city=city, weather=result, temperature="")
 
 
+@app.get("/search")
+def web_search(query: str):
+    """网络搜索 - 直接调用WebSearchTool"""
+    search_tool = WebSearchTool()
+    result = search_tool.execute(query=query)
+    return {"query": query, "result": result}
+
+
 @app.get("/conversations")
 def get_conversations(limit: int = 10):
     """获取历史对话"""
