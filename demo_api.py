@@ -178,7 +178,14 @@ async def upload_document(file: UploadFile = File(...)):
         return {"error": "只支持 .txt 和 .md 格式"}
 
     content = await file.read()
-    text = content.decode("utf-8")
+    # 尝试多种编码
+    try:
+        text = content.decode("utf-8")
+    except UnicodeDecodeError:
+        text = content.decode("gbk", errors="ignore")
+
+    if not text.strip():
+        return {"error": "文件内容为空"}
 
     # 保存文件到 docs 目录
     file_path = os.path.join(config.docs_path, file.filename)
@@ -190,6 +197,10 @@ async def upload_document(file: UploadFile = File(...)):
     doc = Document(page_content=text, metadata={"source": file.filename})
     sp = TextSplitter()
     chunks = sp.split([doc])
+
+    if not chunks:
+        return {"error": "文件切分后没有内容，请检查文件内容是否有效"}
+
     if rag_chain:
         rag_chain.vectorstore_manager.add_documents(chunks)
         return {"message": f"文件 '{file.filename}' 已上传并加入知识库", "chunks": len(chunks)}
