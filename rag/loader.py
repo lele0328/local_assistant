@@ -16,12 +16,20 @@ class DocumentLoader:
         self.documents: List[Document] = []
 
     def load_file(self, file_path: str) -> List[Document]:
-        """加载单个文件"""
+        """加载单个文件，自动检测编码"""
         suffix = Path(file_path).suffix
         if suffix not in self.SUPPORTED_FORMATS:
             return []
-        with open(file_path, "r", encoding="utf-8") as f:
-            text = f.read()
+        # 先尝试 UTF-8，失败则尝试 GBK
+        for encoding in ["utf-8", "gbk", "gb2312", "latin-1"]:
+            try:
+                with open(file_path, "r", encoding=encoding) as f:
+                    text = f.read()
+                break
+            except UnicodeDecodeError:
+                continue
+        else:
+            text = ""
         doc = Document(page_content=text, metadata={"source": file_path})
         return [doc]
 
