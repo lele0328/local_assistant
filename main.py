@@ -19,6 +19,7 @@ from tools.calculator import CalculatorTool
 from tools.notes import NotesTool
 from tools.file_search import FileSearchTool
 from tools.weather import WeatherTool
+from tools.web_search import WebSearchTool
 from tools.base import ToolRegistry
 from storage.database import Database
 from utils.logger import Logger
@@ -43,6 +44,7 @@ def init_tools():
     registry.register(NotesTool())
     registry.register(FileSearchTool())
     registry.register(WeatherTool())
+    registry.register(WebSearchTool())
     return registry
 
 
