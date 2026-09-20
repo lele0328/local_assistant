@@ -188,7 +188,8 @@ async def upload_document(file: UploadFile = File(...)):
     # 切分并加入向量库
     from langchain_core.documents import Document
     doc = Document(page_content=text, metadata={"source": file.filename})
-    chunks = splitter.split([doc])
+    sp = TextSplitter()
+    chunks = sp.split([doc])
     if rag_chain:
         rag_chain.vectorstore.add_documents(chunks)
         return {"message": f"文件 '{file.filename}' 已上传并加入知识库", "chunks": len(chunks)}
