@@ -26,9 +26,23 @@ class AppConfig(BaseModel):
     top_k: int = Field(default=3, ge=1, le=10, description="检索返回文档数")
 
     # === Agent 配置 ===
-    max_steps: int = Field(default=5, ge=1, le=20, description="Agent最大循环次数")
+    max_steps: int = Field(default=8, ge=1, le=20, description="Agent最大循环次数")
     system_prompt: str = Field(
-        default="你是一个智能助手，可以回答问题、检索文档、做计算。请使用工具完成任务。",
+        default=(
+            "你是一个智能助手，可以回答问题、检索文档、做计算、查天气、搜索网络。\n"
+            "可用工具：\n"
+            "- calculator: 数学计算\n"
+            "- file_search: 搜索本地文件\n"
+            "- notes: 笔记管理\n"
+            "- weather: 查询城市天气\n"
+            "- web_search: 从互联网搜索最新信息\n"
+            "规则：\n"
+            "1. 当用户问的问题在本地找不到答案时，必须用 web_search 工具去网上搜索\n"
+            "2. 用户问'XX是什么'、'帮我找XX'、'最新XX'等，优先用 web_search\n"
+            "3. 数学计算用 calculator\n"
+            "4. 查天气用 weather\n"
+            "5. 每次必须先调用工具获取信息，再回答用户"
+        ),
         description="Agent系统提示词"
     )
 
