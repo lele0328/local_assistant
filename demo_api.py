@@ -10,7 +10,7 @@ import functools
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
 from pydantic import BaseModel
 
 from config import config
@@ -168,6 +168,32 @@ def get_conversations(limit: int = 10):
     """获取历史对话"""
     conversations = db.get_conversations(limit=limit)
     return {"count": len(conversations), "conversations": conversations}
+
+
+@app.post("/upload")
+async def upload_document(file: UploadFile = File(...)):
+    """上传文件到RAG知识库（支持 .txt 和 .md）"""
+    suffix = os.path.splitext(file.filename)[1].lower()
+    if suffix not in [".txt", ".md"]:
+        return {"error": "只支持 .txt 和 .md 格式"}
+
+    content = await file.read()
+    text = content.decode("utf-8")
+
+    # 保存文件到 docs 目录
+    file_path = os.path.join(config.docs_path, file.filename)
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    # 切分并加入向量库
+    from langchain_core.documents import Document
+    doc = Document(page_content=text, metadata={"source": file.filename})
+    chunks = splitter.split([doc])
+    if rag_chain:
+        rag_chain.vectorstore.add_documents(chunks)
+        return {"message": f"文件 '{file.filename}' 已上传并加入知识库", "chunks": len(chunks)}
+    else:
+        return {"message": f"文件已保存到 docs 目录，但RAG未初始化，重启后生效", "chunks": len(chunks)}
 
 
 # ========== 启动方式 ==========
