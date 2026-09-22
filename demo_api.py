@@ -178,11 +178,31 @@ async def upload_document(file: UploadFile = File(...)):
         return {"error": "只支持 .txt 和 .md 格式"}
 
     content = await file.read()
-    # 尝试多种编码
+    print(f"[upload] 收到文件: {file.filename}, 大小: {len(content)} bytes")
+
+    # 用 chardet 自动检测编码
+    encoding = None
     try:
-        text = content.decode("utf-8")
-    except UnicodeDecodeError:
-        text = content.decode("gbk", errors="ignore")
+        import chardet
+        detected = chardet.detect(content)
+        encoding = detected.get("encoding") if detected.get("confidence", 0) > 0.7 else None
+    except ImportError:
+        pass
+
+    # 按优先级尝试解码
+    text = None
+    for enc in [encoding, "utf-8", "gbk", "gb18030", "latin-1"]:
+        if not enc:
+            continue
+        try:
+            text = content.decode(enc)
+            print(f"[upload] {enc}解码成功, 文本长度: {len(text)}")
+            break
+        except (UnicodeDecodeError, TypeError):
+            continue
+
+    if not text:
+        text = content.decode("utf-8", errors="ignore")
 
     if not text.strip():
         return {"error": "文件内容为空"}
@@ -197,6 +217,7 @@ async def upload_document(file: UploadFile = File(...)):
     doc = Document(page_content=text, metadata={"source": file.filename})
     sp = TextSplitter()
     chunks = sp.split([doc])
+    print(f"[upload] 切分结果: {len(chunks)} 个块")
 
     if not chunks:
         return {"error": "文件切分后没有内容，请检查文件内容是否有效"}

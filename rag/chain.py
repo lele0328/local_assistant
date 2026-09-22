@@ -55,6 +55,13 @@ class RAGChain:
 
     def ask(self, question: str) -> str:
         """提问并获取回答"""
+        # 先打印检索结果，方便调试
+        retriever = self.vectorstore_manager.get_retriever()
+        docs = retriever.invoke(question)
+        print(f"[RAG] 检索到 {len(docs)} 个文档")
+        for i, doc in enumerate(docs):
+            print(f"[RAG] doc{i}: {doc.page_content[:80]}")
+
         chain = self.build_chain()
         answer = chain.invoke(question)
         return answer
