@@ -1,13 +1,35 @@
-langchain
-langchain-openai
-langchain-community
-langchain-text-splitters
-langchain-core
-chromadb
-openai
-pydantic
-python-dotenv
-fastapi
-uvicorn
-requests
-chardet
+# 项目直接依赖（版本已锁定）
+#
+# 版本锁定原则：pip freeze 导出的真实版本，确保 clone 后能复现。
+# 之前只写包名不写版本，langchain 家族跨版本不兼容会导致 ImportError，
+# 别人 clone 下来跑不起来 —— 这个问题已修复。
+#
+# 全部版本来自本机验证可运行的 .venv 环境。
+
+# ---- LLM 框架 / LangChain 家族（版本需同代，勿单独升级某一个）----
+langchain==1.4.0
+langchain-core==1.6.3
+langchain-community==0.4.2
+langchain-openai==1.6.2
+langchain-text-splitters==1.1.2
+
+# ---- LLM 客户端 ----
+openai==3.13.0
+
+# ---- 向量数据库 ----
+chromadb==1.5.9
+
+# ---- Web 服务 ----
+fastapi==0.141.1
+uvicorn==0.52.4
+
+# ---- 工具依赖 ----
+requests==2.34.2
+chardet==7.6.0
+
+# ---- 配置与数据校验 ----
+pydantic==2.13.5
+python-dotenv==1.2.3
+
+# ---- 安全（storage/encryption.py 的真实加密实现依赖）----
+cryptography==50.0.2
