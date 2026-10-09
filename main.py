@@ -10,7 +10,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from config import config
 from core.agent import Agent
-from core.memory import MemoryManager
 from rag.loader import DocumentLoader
 from rag.splitter import TextSplitter
 from rag.vectorstore import VectorStoreManager
@@ -67,7 +66,6 @@ def main():
     print_banner()
     logger = Logger()
     db = Database()
-    memory = MemoryManager()
 
     print("正在初始化系统...")
     try:
@@ -81,7 +79,8 @@ def main():
     tool_registry = init_tools()
     agent = init_agent(tool_registry)
 
-    print("初始化完成！输入 'quit' 退出，'rag' 切换RAG模式，'agent' 切换Agent模式\n")
+    print("初始化完成！")
+    print("  指令：quit 退出 / rag 切换RAG模式 / agent 切换Agent模式 / clear 清空对话记忆\n")
 
     mode = "agent"
     while True:
@@ -94,16 +93,21 @@ def main():
                 break
             if user_input.lower() == "rag":
                 mode = "rag"
-                print("切换到RAG模式\n")
+                print("切换到RAG模式（RAG模式不携带对话记忆）\n")
                 continue
             if user_input.lower() == "agent":
                 mode = "agent"
                 print("切换到Agent模式\n")
                 continue
+            if user_input.lower() == "clear":
+                agent.clear_memory()
+                print("已清空对话记忆\n")
+                continue
 
             if mode == "rag" and rag_chain:
                 answer = rag_chain.ask(user_input)
             else:
+                # Agent 模式带多轮记忆；RAG 模式单轮问答
                 answer = agent.run(user_input)
 
             print(f"助手: {answer}\n")
@@ -114,6 +118,7 @@ def main():
             print("\n再见！")
             break
         except Exception as e:
+            logger.error(f"主循环异常: {e!r}")
             print(f"出错: {e}\n")
 
 

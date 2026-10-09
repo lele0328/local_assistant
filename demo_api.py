@@ -15,7 +15,6 @@ from pydantic import BaseModel
 
 from config import config
 from core.agent import Agent
-from core.memory import MemoryManager
 from rag.loader import DocumentLoader
 from rag.splitter import TextSplitter
 from rag.vectorstore import VectorStoreManager
@@ -133,7 +132,11 @@ def health():
 @app.post("/chat", response_model=ChatResponse)
 @timer
 def chat(request: ChatRequest):
-    """聊天接口 - 支持agent和rag两种模式"""
+    """聊天接口 - 支持agent和rag两种模式
+
+    注意：Agent 模式现在带多轮记忆（由 Agent 内部的 MemoryManager 维护），
+    RAG 模式为单轮问答。如需隔离不同用户的会话，请自行按 session 传入独立 Agent 实例。
+    """
     try:
         if request.mode == "rag" and rag_chain:
             answer = rag_chain.ask(request.question)
@@ -144,7 +147,16 @@ def chat(request: ChatRequest):
         return ChatResponse(answer=answer, mode=request.mode)
 
     except Exception as e:
-        return ChatResponse(answer=f"出错了: {e}", mode=request.mode)
+        logger.error(f"/chat 失败: {e!r}")
+        # 不把原始异常暴露给调用方
+        return ChatResponse(answer="服务处理时出错，请稍后重试。", mode=request.mode)
+
+
+@app.post("/memory/clear")
+def clear_memory():
+    """清空 Agent 的对话记忆"""
+    agent.clear_memory()
+    return {"message": "对话记忆已清空"}
 
 
 @app.get("/weather/{city}", response_model=WeatherResponse)
