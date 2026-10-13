@@ -17,6 +17,11 @@ eval_results/
 # 个人文件备份（学习记录、临时测试数据等，不属于项目）
 _backup_personal/
 
+# 临时调试脚本与日志（一次性排查用，不属于项目）
+_*.py
+_*.log
+_*.txt
+
 # IDE
 .idea/
 .vscode/
