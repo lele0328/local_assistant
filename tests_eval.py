@@ -48,8 +48,8 @@ TEST_CASES = [
     {
         "id": "norm_01",
         "type": "normal",
-        "question": "什么是装饰器？",
-        "expected_keywords": ["函数", "@"],
+        "question": "RAG的全称是什么？",
+        "expected_keywords": ["Retrieval-Augmented","检索增强"],
         "must_refuse": False,
     },
     {
@@ -80,6 +80,48 @@ TEST_CASES = [
         "expected_keywords": ["名称", "描述", "参数"],
         "must_refuse": False,
     },
+    {
+        "id": "norm_06",
+        "type": "normal",
+        "question": "什么是Agent",
+        "expected_keywords": ["定义", "描述"],
+        "must_refuse": False,
+    },
+    {
+        "id": "norm_07",
+        "type": "normal",
+        "question": "拒答准确率为什么重要",
+        "expected_keywords": ["负向指标", "幻觉"],
+        "must_refuse": False,
+    },
+    {
+        "id": "norm_08",
+        "type": "normal",
+        "question": "prompt直接注入和间接注入的区别",
+        "expected_keywords": ["忽略以上指令", "恶意指令"],
+        "must_refuse": False,
+    },
+    {
+        "id": "norm_09",
+        "type": "normal",
+        "question": "RAG的切块策略是什么",
+        "expected_keywords": ["父子块", "语义切块"],
+        "must_refuse": False,
+    },
+    {
+        "id": "norm_10",
+        "type": "normal",
+        "question": "Function Calling 中谁掌握真正的执行权？",
+        "expected_keywords": ["应用"],
+        "must_refuse": False
+    },
+    {
+        "id": "norm_11",
+        "type": "normal",
+        "question": "记忆分为哪几层？",
+        "expected_keywords": ["短期", "长期", "工作"],
+        "must_refuse": False
+    },
 
     # ---------- 类 2：多跳问答（需要综合两段以上内容）----------
     {
@@ -95,6 +137,27 @@ TEST_CASES = [
         "question": "Agent 用 Function Calling 调用工具，这和 RAG 的检索有什么共同点？",
         "expected_keywords": ["外部", "信息"],
         "must_refuse": False,
+    },
+    {
+        "id": "hop_03",
+        "type": "multi_hop",
+        "question": "RAG和Agent有什么区别",
+        "expected_keywords": ["检索增强", "自主规划"],
+        "must_refuse": False,
+    },
+    {
+        "id": "hop_04",
+        "type": "multi_hop",
+        "question": "召回和重排各自追求什么指标？为什么两者都需要？",
+        "expected_keywords": ["Recall", "Precision"],
+        "must_refuse": False
+    },
+    {
+        "id": "hop_05",
+        "type": "multi_hop",
+        "question": "什么情况下该用 Workflow 而不是 Agent？",
+         "expected_keywords": ["固定", "风险"],
+         "must_refuse": False
     },
 
     # ---------- 类 3：无答案（知识库里没有，必须拒答）----------
@@ -127,21 +190,74 @@ TEST_CASES = [
         "expected_keywords": [],
         "must_refuse": True,
     },
+    {
+        "id": "noans_05",
+        "type": "no_answer",
+        "question": "用户的名字是什么",
+        "expected_keywords": [],
+        "must_refuse": True,
+    },
+    {
+        "id": "noans_06",
+        "type": "no_answer",
+        "question": "什么是卷积神经网络",
+        "expected_keywords": [],
+        "must_refuse": True,
+    },
+    {
+        "id": "noans_07",
+        "type": "no_answer",
+        "question": "TCP三次握手的流程是什么",
+        "expected_keywords": [],
+        "must_refuse": True,
+    },
+    {
+        "id": "noans_08",
+        "type": "no_answer",
+        "question": "BM25 的 k1 和 b 参数应该怎么调？",
+        "expected_keywords": [],
+        "must_refuse": True
+    },
 
     # ---------- 类 4：格式 / 行为约束 ----------
     {
         "id": "fmt_01",
         "type": "format",
         "question": "用一句话解释什么是 RAG。",
-        "expected_keywords": ["检索"],
+        "expected_keywords": ["检索增强", "Retrieval-Augmented"],
         "must_refuse": False,
         "max_sentences": 2,   # 约束：不能超长
     },
     {
         "id": "fmt_02",
         "type": "format",
-        "question": "装饰器的三个常见应用场景，用列表列出。",
-        "expected_keywords": ["日志", "缓存", "权限"],
+        "question": "用一句话说明 RAG 能解决什么问题",
+        "expected_keywords": ["时效", "私有", "幻觉"],
+        "max_sentences": 2,
+        "must_refuse": False,
+    },
+    {
+        "id": "fmt_03",
+        "type": "format",
+        "question": "用不超过两句话说明 Agent 和 Workflow 的区别",
+        "expected_keywords": ["预先定义", "自主规划"],
+        "max_sentences": 2,
+        "must_refuse": False,
+    },
+    {
+        "id": "fmt_04",
+        "type": "format",
+        "question": "上下文工程不稳定的原因",
+        "expected_keywords": ["稀释", "噪声"],
+        "max_sentences": 3,
+        "must_refuse": False,
+    },
+    {
+        "id": "fmt_05",
+        "type": "format",
+        "question": "测评的常见基准是什么",
+        "expected_keywords": ["AgentBench", "GAIA"],
+        "max_sentences": 3,
         "must_refuse": False,
     },
 ]
@@ -154,11 +270,16 @@ REFUSAL_PATTERNS = [
     r"无法从",
     r"文档中?没有",
     r"未提及",
-    r"不确定",
+    r"不确定(?!性)",
     r"无法回答",
     r"没有足够",
     r"信息不足",
+    r"请提出您的问题",
+    r"请提供(您的)?问题",
 ]
+def _one_line(text: str, limit: int = 300) -> str:
+    return text[:limit].replace("\n", " ⏎ ")
+
 
 
 @dataclass
@@ -227,7 +348,9 @@ def is_refusal(answer: str) -> bool:
     """判断回答是否是拒答"""
     if not answer:
         return True
-    return any(re.search(p, answer) for p in REFUSAL_PATTERNS)
+    if not any(re.search(p, answer) for p in REFUSAL_PATTERNS):
+        return False
+    return len(answer.strip())<80
 
 
 def count_sentences(text: str) -> int:
@@ -387,7 +510,7 @@ def eval_e2e(report: EvalReport, mode: str = "rag"):
         print(f"[{mark}] {case['id']} ({latency:.1f}s) {case['question'][:32]}")
         if not correct:
             print(f"       └─ {reason}")
-            print(f"       └─ 回答: {answer[:100]}")
+            print(f"       └─ 回答: {_one_line(answer)}")
 
     _finalize(report)
 
@@ -452,7 +575,7 @@ def save_outputs(report: EvalReport, show_detail: bool):
                 print(f"\n【{reason}】共 {len(items)} 条")
                 for c in items:
                     print(f"  - [{c.id}] {c.question}")
-                    print(f"    回答: {c.answer[:120]}")
+                    print(f"    回答: {_one_line(c.answer,400)}")
 
 
 def main():
