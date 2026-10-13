@@ -4,7 +4,7 @@
 """
 from typing import List
 from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import MarkdownHeaderTextSplitter
 
 from config import config
 
@@ -13,19 +13,25 @@ class TextSplitter:
     """文本切分器"""
 
     def __init__(self):
-        self.splitter = RecursiveCharacterTextSplitter(
-            chunk_size=config.chunk_size,
-            chunk_overlap=config.chunk_overlap,
-            separators=["\n\n", "\n", "。", ",", " ", ""],
+        Headers_to_split_on = [
+            ("#","Header 1"),
+            ("##","Header 2"),
+            ("###","Header 3")
+        ]
+        self.splitter =MarkdownHeaderTextSplitter(
+            headers_to_split_on=Headers_to_split_on,
+            return_each_line=False,
+            strip_headers=False
         )
 
-    def split(self, documents: List[Document]) -> List[Document]:
+    def split(self, documents: list[Document]) -> List[Document]:
         """把文档列表切分成小块"""
+        all_chunks = []
         print(f"切分前: {len(documents)} 个文档")
-        chunks = self.splitter.split_documents(documents)
-        print(f"切分后: {len(chunks)} 个块")
-        return chunks
+        for doc in documents:
+            chunks = self.splitter.split_text(doc.page_content)
+            for chunk in chunks:
+                chunk.metadata={**doc.metadata,**chunk.metadata}
+            all_chunks.extend(chunks)
+        return all_chunks
 
-    def split_text(self, text: str) -> List[str]:
-        """把纯文本切分成小块（不带metadata）"""
-        return self.splitter.split_text(text)
