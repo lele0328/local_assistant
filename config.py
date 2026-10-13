@@ -24,6 +24,7 @@ class AppConfig(BaseModel):
     chunk_size: int = Field(default=200, ge=50, le=1000, description="文本切分大小")
     chunk_overlap: int = Field(default=50, ge=0, le=200, description="切分重叠区域")
     top_k: int = Field(default=3, ge=1, le=10, description="检索返回文档数")
+    collection_name : str ="RAG_DATABASE"
 
     # === Agent 配置 ===
     max_steps: int = Field(default=8, ge=1, le=20, description="Agent最大循环次数")
@@ -58,7 +59,7 @@ class AppConfig(BaseModel):
     )
 
     # === 存储配置 ===
-    db_path: str = Field(default="./data/chroma_db", description="向量数据库路径")
+    db_path: str = Field(default=os.path.join(os.path.dirname(os.path.abspath(__file__)),"data","chroma_db"), description="向量数据库路径")
     docs_path: str = Field(default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "docs"), description="文档目录路径")
     notes_path: str = Field(default="./data/notes.json", description="笔记存储路径")
     log_path: str = Field(default="./data/logs", description="日志路径")

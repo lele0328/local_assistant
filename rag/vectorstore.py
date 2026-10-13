@@ -6,6 +6,7 @@ from typing import List, Optional
 from langchain_core.documents import Document
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
+import hashlib
 
 from config import config
 
@@ -21,16 +22,34 @@ class VectorStoreManager:
         )
         self.vectorstore: Optional[Chroma] = None
 
+    def fingerprint (self,documents):
+        h=hashlib.md5()
+        for doc in documents:
+            h.update(doc.page_content.encode())
+        return h.hexdigest()
+
     def create_from_documents(self, documents: List[Document]) -> None:
         """从文档列表创建向量数据库"""
-        if self.vectorstore is None:
-            self.vectorstore = Chroma.from_documents(
-                documents=documents,
-                embedding=self.embeddings,
+        new_db = self.fingerprint(documents)
+        self.vectorstore = Chroma(
+            collection_name=config.collection_name,
+            persist_directory=config.db_path,
+            embedding_function=self.embeddings
             )
-        else:
+        old_db = (self.vectorstore._collection.metadata or {}).get("fingerprint")
+        if old_db != new_db:
+            self.vectorstore.delete_collection()
+            self.vectorstore = Chroma(
+                collection_name=config.collection_name,
+                persist_directory=config.db_path,
+                embedding_function=self.embeddings
+            )
+            self.vectorstore._collection.modify(metadata={"fingerprint": new_db})
+
+        if len(self.vectorstore) == 0:
             self.vectorstore.add_documents(documents)
-        print(f"建库完成: {len(documents)} 个文档")
+
+
 
     def add_documents(self, documents: List[Document]) -> None:
         """往已有数据库添加文档"""
@@ -53,7 +72,18 @@ class VectorStoreManager:
         """获取 retriever（转接头，给LCEL链用）"""
         k = top_k or config.top_k
         return self.vectorstore.as_retriever(search_kwargs={"k": k})
+    
+    def reset(self):
+        if self.vectorstore is not None:
+            self.vectorstore.delete_collection()
+        self.vectorstore=Chroma(
+            collection_name=config.collection_name,
+            persist_directory=config.db_path,
+            embedding_function=self.embeddings
+        )
+        return self.vectorstore
 
-    def clear(self) -> None:
-        """清空数据库"""
-        self.vectorstore = None
+
+
+
+
