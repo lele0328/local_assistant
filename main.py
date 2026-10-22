@@ -105,14 +105,19 @@ def main():
                 continue
 
             if mode == "rag" and rag_chain:
-                answer = rag_chain.ask(user_input)
+                print("助手: ", end="", flush=True)
+                parts = []
+                for piece in rag_chain.ask_stream(user_input):
+                    print(piece, end="", flush=True)
+                    parts.append(piece)
+                answer = "".join(parts)
+                print("\n")
             else:
-                # Agent 模式带多轮记忆；RAG 模式单轮问答
                 answer = agent.run(user_input)
-
-            print(f"助手: {answer}\n")
+                print(f"助手: {answer}\n")
 
             db.save_conversation(user_input, answer)
+
 
         except (KeyboardInterrupt, EOFError):
             print("\n再见！")

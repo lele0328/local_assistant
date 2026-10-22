@@ -2,6 +2,7 @@
 LCEL检索链模块
 用LangChain LCEL管道串联：检索 → 格式化 → Prompt → LLM → 输出
 """
+import jieba
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
@@ -39,6 +40,7 @@ class RAGChain:
             temperature=config.temperature,
             timeout=config.timeout,
         )
+
         self.vectorstore_manager = vectorstore_manager
         self.prompt = ChatPromptTemplate.from_template(RAG_PROMPT_TEMPLATE)
 
@@ -65,3 +67,8 @@ class RAGChain:
         chain = self.build_chain()
         answer = chain.invoke(question)
         return answer
+    def ask_stream(self, question: str):
+        """流式提问：一段一段吐出文字"""
+        chain = self.build_chain()
+        for piece in chain.stream(question):
+            yield piece
