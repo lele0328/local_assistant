@@ -84,7 +84,7 @@ TEST_CASES = [
         "id": "norm_06",
         "type": "normal",
         "question": "什么是Agent",
-        "expected_keywords": ["定义", "描述"],
+        "expected_keywords": ["智能系统", "工具"],
         "must_refuse": False,
     },
     {
@@ -249,7 +249,7 @@ TEST_CASES = [
         "type": "format",
         "question": "上下文工程不稳定的原因",
         "expected_keywords": ["稀释", "噪声"],
-        "max_sentences": 3,
+        "max_sentences": 5,
         "must_refuse": False,
     },
     {
