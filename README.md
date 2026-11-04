@@ -196,6 +196,44 @@
 候选池（10）与最终返回数（3）分离是必要条件——两路各取 3 再融合时，
 正确答案连候选资格都没有，实测会让 2 条本可修复的用例继续失败。
 
+### 8. 工具复用：把 5 个工具暴露为标准 MCP 服务
+
+**动机**：原本工具只在这一个进程内可用，Claude Desktop / 其他 Agent 客户端无法复用。
+MCP（Model Context Protocol）是当前的通用标准，暴露成 MCP server 后，
+同一批工具可以被任何支持 MCP 的客户端直接调用。
+
+**实现**（`mcp_server.py`）：**薄封装**——5 个工具的业务逻辑一行不改，
+新文件只负责协议层（工具签名、参数 schema、参数约束）：
+
+| 工具 | 参数约束 |
+|------|---------|
+| `calculator` | 纯数学表达式（底层 AST 白名单求值） |
+| `file_search` | `directory` 限定在项目目录内，越界直接拒绝 |
+| `notes` | `action` 用 `Literal` 枚举约束为 create / list / read / delete |
+| `weather` / `web_search` | 单参数，原逻辑透传 |
+
+**三个值得记的点**：
+
+1. **参数是外部输入，必须当不可信数据处理** —— `file_search` 的 `directory` 来自客户端，
+   一个 `../../..` 就能列出整台机器的文件。用 `Path.resolve()` + `is_relative_to(BASE_DIR)`
+   拦截；绝对路径经 `/` 运算后会整体替换，这条判断同样能挡住。
+2. **参数枚举用 `Literal` 而不是文档描述** —— 类型层面写死 `action` 的取值，
+   客户端在 schema 阶段就看得见合法值，比在 docstring 里写"只能是这四个"更可靠。
+3. **mcp 2.x 把 `FastMCP` 改名为 `MCPServer`**（`from mcp.server.mcpserver import MCPServer`），
+   照 v1 教程写 `from mcp.server.fastmcp import FastMCP` 会直接 `ModuleNotFoundError`。
+
+**验证方式**（`mcp_client.py`）：不靠"看起来能跑"——用官方 SDK 的 stdio transport
+真正拉起 server 子进程，列工具、校验 schema、逐个调用，并专门构造越界请求验证防护生效，
+断言失败则退出码非 0。5 个工具调用全部通过、越界请求全部被拦截。
+
+```bash
+python mcp_server.py     # stdio 启动（供 MCP 客户端连接）
+python mcp_client.py     # 自检：拉起 server → 列工具 → 逐个调用 → 验越界防护
+```
+
+> 本地在 Agent 内部仍然直接用 function calling（同进程调用，延迟更低）；
+> MCP 是"对外复用"的通道，两者并存而不是二选一。
+
 ---
 
 ## 快速开始
@@ -335,6 +373,8 @@ local_assistant/
 ├── main.py                # 命令行入口
 ├── demo_api.py            # FastAPI 服务
 ├── tests_eval.py          # 评测脚手架
+├── mcp_server.py          # MCP 工具服务（stdio，5 个工具的薄封装）
+├── mcp_client.py          # MCP 客户端自检（拉起 server + 越界防护验证）
 ├── core/
 │   ├── agent.py           # ReAct 循环 + 工具调度 + 记忆 + 轨迹记录
 │   ├── memory.py          # 对话记忆（按轮次管理，保证 tool 配对完整）
@@ -382,4 +422,4 @@ local_assistant/
 
 ## 技术栈
 
-Python 3.10+ · LangChain (LCEL) · ChromaDB · FastAPI · Pydantic · 智谱 GLM（OpenAI 兼容接口）· cryptography
+Python 3.10+ · LangChain (LCEL) · ChromaDB · FastAPI · Pydantic · 智谱 GLM（OpenAI 兼容接口）· cryptography · MCP（Python SDK）

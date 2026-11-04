@@ -33,3 +33,8 @@ python-dotenv==1.2.3
 
 # ---- 安全（storage/encryption.py 的真实加密实现依赖）----
 cryptography==50.0.2
+
+mcp==2.3.0
+jieba==0.42.1
+rank-bm25==0.2.2
+python-multipart==0.0.32
